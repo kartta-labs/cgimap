@@ -156,8 +156,6 @@ static void process_requests(int socket, const po::variables_map &options) {
 
   std::shared_ptr<data_update::factory> update_factory = create_update_backend(options);
 
-  std::shared_ptr<oauth::store> oauth_store = create_oauth_store(options);
-
   logger::message("Initialised");
 
   // enter the main loop
@@ -175,7 +173,7 @@ static void process_requests(int socket, const po::variables_map &options) {
     if (req.accept_r() >= 0) {
 	std::chrono::system_clock::time_point now(std::chrono::system_clock::now());
       req.set_current_time(now);
-      process_request(req, limiter, generator, route, factory, update_factory, oauth_store);
+      process_request(req, limiter, generator, route, factory, update_factory);
     }
   }
 

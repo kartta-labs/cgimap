@@ -10,7 +10,6 @@
 
 #include "cgimap/data_selection.hpp"
 #include "cgimap/data_update.hpp"
-#include "cgimap/oauth.hpp"
 
 #include "cgimap/backend/apidb/transaction_manager.hpp"
 

@@ -1,7 +1,6 @@
 #include "cgimap/backend/apidb/apidb.hpp"
 #include "cgimap/backend/apidb/readonly_pgsql_selection.hpp"
 #include "cgimap/backend/apidb/pgsql_update.hpp"
-#include "cgimap/backend/apidb/oauth_store.hpp"
 #include "cgimap/backend.hpp"
 
 #include <memory>
@@ -30,18 +29,6 @@ struct apidb_backend : public backend {
        "maximum size of changeset cache")
       ("dbport", po::value<string>(),
        "database port number or UNIX socket file name")
-      ("oauth-dbname", po::value<string>(),
-       "database name to use for OAuth, if different from --dbname")
-      ("oauth-host", po::value<string>(),
-       "database server host for OAuth, if different from --host")
-      ("oauth-username", po::value<string>(),
-       "database user name for OAuth, if different from --username")
-      ("oauth-password", po::value<string>(),
-       "database password for OAuth, if different from --password")
-      ("oauth-charset", po::value<string>(),
-       "database character set for OAuth, if different from --charset")
-      ("oauth-dbport", po::value<string>(),
-       "database port for OAuth, if different from --dbport")
       ("update-dbname", po::value<string>(),
        "database name to use for API write operations, if different from --dbname")
       ("update-host", po::value<string>(),
@@ -79,13 +66,6 @@ struct apidb_backend : public backend {
     return std::make_shared<pgsql_update::factory>(opts);
   }
 
-
-  std::shared_ptr<oauth::store> create_oauth_store(
-    const po::variables_map &opts) {
-    shared_ptr<oauth::store> store =
-      std::make_shared<oauth_store>(opts);
-    return store;
-  }
 
 private:
   string m_name;

@@ -37,7 +37,7 @@ void validate_user_db_update_permission (
   if (selection->supports_user_details ()
       && selection->is_user_blocked (*user_id))
     throw http::forbidden (
-	"Your access to the API has been blocked. Please log-in to the web interface to find out more.");
+       "Your access to the API has been blocked. Please log-in to the web interface to find out more.");
 
   if (!allow_api_write)
     throw http::unauthorized ("You have not granted the modify map permission");
@@ -47,7 +47,7 @@ void check_db_readonly_mode (const std::shared_ptr<data_update>& data_update)
 {
   if (data_update->is_api_write_disabled())
     throw http::bad_request (
-	"Server is currently in read only mode, no database changes allowed at this time");
+       "Server is currently in read only mode, no database changes allowed at this time");
 }
 
 
@@ -105,7 +105,6 @@ void response_415(const http::unsupported_media_type&e, request &r) {
     .put(message); // output the message
 
   r.finish();
-
 }
 
 void respond_error(const http::exception &e, request &r) {
@@ -125,7 +124,6 @@ void respond_error(const http::exception &e, request &r) {
          << "<message>" << e.what() << "</message>\r\n"
          << "</osmError>\r\n";
     r.put(ostr.str());
-
   } else {
     std::string message(e.what());
 
@@ -285,7 +283,7 @@ process_post_put_request(request &req, handler_ptr_t handler,
   // get encoding to use
   shared_ptr<http::encoding> encoding = get_encoding(req);
 
-//  // figure out best mime type
+  //  // figure out best mime type
   mime::type best_mime_type = choose_best_mime_type(req, responder);
 
   //mime::type best_mime_type = mime::type::text_xml;
@@ -305,7 +303,7 @@ process_post_put_request(request &req, handler_ptr_t handler,
   shared_ptr<output_formatter> o_formatter = create_formatter(req, best_mime_type, out);
 
   try {
-//    // call to write the response
+    //    // call to write the response
     responder->write(o_formatter, generator, req.get_current_time());
 
     // ensure the request is finished
@@ -410,44 +408,6 @@ std::tuple<string, size_t> process_options_request(
 const std::string addr_prefix("addr:");
 const std::string user_prefix("user:");
 
-struct is_copacetic : public boost::static_visitor<bool> {
-  template <typename T>
-  bool operator()(const T &) const { return false; }
-};
-
-template <>
-bool is_copacetic::operator()<oauth::validity::copacetic>(
-  const oauth::validity::copacetic &) const {
-  return true;
-}
-
-struct get_oauth_token : public boost::static_visitor<std::string> {
-  template <typename T>
-  std::string operator()(const T &) const {
-    throw std::runtime_error("Type does not contain an OAuth token.");
-  }
-};
-
-template <>
-std::string get_oauth_token::operator()<oauth::validity::copacetic>(
-  const oauth::validity::copacetic &c) const {
-  return c.token;
-}
-
-struct oauth_status_response : public boost::static_visitor<void> {
-  void operator()(const oauth::validity::copacetic &) const {}
-  void operator()(const oauth::validity::not_signed &) const {}
-  void operator()(const oauth::validity::bad_request &) const {
-    throw http::bad_request("Bad OAuth request.");
-  }
-  void operator()(const oauth::validity::unauthorized &u) const {
-    std::ostringstream message;
-    message << "Unauthorized OAuth request, because "
-            << u.reason;
-    throw http::unauthorized(message.str());
-  }
-};
-
 // look in the request get parameters to see if the user requested that
 // redactions be shown
 bool show_redactions_requested(request &req) {
@@ -465,43 +425,22 @@ bool show_redactions_requested(request &req) {
 
 // Determine user id and allow_api_write flag based on Basic Auth or OAuth header
 boost::optional<osm_user_id_t> determine_user_id (request& req,
-			        std::shared_ptr<data_selection>& selection,
-			        std::shared_ptr<oauth::store>& store,
-			        bool& allow_api_write)
+                               std::shared_ptr<data_selection>& selection,
+                               bool& allow_api_write)
 {
-  // Try to authenticate user via Basic Auth
-  boost::optional<osm_user_id_t>  user_id = basicauth::authenticate_user (req, selection);
+  const char *x_email = req.get_param("HTTP_X_EMAIL");
+  if (!x_email)
+    throw http::unauthorized("Not authorized");
+  std::string email(x_email);
 
-  // Try to authenticate user via OAuth token
-  if (!user_id && store)
-    {
-      oauth::validity::validity oauth_valid = oauth::is_valid_signature (
-	  req, *store, *store, *store);
-      if (boost::apply_visitor (is_copacetic (), oauth_valid))
-	{
-	  string token = boost::apply_visitor (get_oauth_token (), oauth_valid);
-	  user_id = store->get_user_id_for_token (token);
-	  if (!user_id)
-	    {
-	      // we can get here if there's a valid OAuth signature, with an
-	      // authorised token matching the secret stored in the database,
-	      // but that's not assigned to a user ID. perhaps this can
-	      // happen due to concurrent revocation? in any case, we don't
-	      // want to go any further.
-	      logger::message (
-		  format ("Unable to find user ID for token %1%.") % token);
-	      throw http::server_error ("Unable to find user ID for token.");
-	    }
-	  allow_api_write = store->allow_write_api (token);
-	}
-      else
-	{
-	  boost::apply_visitor (oauth_status_response (), oauth_valid);
-	  // if we got here then oauth_status_response didn't throw, which means
-	  // the request must have been unsigned.
-	}
-    }
-  return user_id;
+  osm_user_id_t user_id;
+  std::string crypt_dummy;
+  std::string salt_dummy;
+  auto user_exists = selection->get_user_id_pass(email, user_id, crypt_dummy, salt_dummy);
+
+  if (!user_exists)
+    throw http::unauthorized("Incorrect user or password"); /// ???
+  return boost::optional<osm_user_id_t>{user_id};
 }
 
 } // anonymous namespace
@@ -512,8 +451,7 @@ boost::optional<osm_user_id_t> determine_user_id (request& req,
 void process_request(request &req, rate_limiter &limiter,
                      const string &generator, routes &route,
                      std::shared_ptr<data_selection::factory> factory,
-                     std::shared_ptr<data_update::factory> update_factory,
-                     std::shared_ptr<oauth::store> store) {
+                     std::shared_ptr<data_update::factory> update_factory) {
   try {
 
     std::set<osm_user_role_t> user_roles;
@@ -531,7 +469,7 @@ void process_request(request &req, rate_limiter &limiter,
     // create a data selection for the request
     auto selection = factory->make_selection(*default_transaction);
 
-    boost::optional<osm_user_id_t> user_id = determine_user_id (req, selection, store, allow_api_write);
+    boost::optional<osm_user_id_t> user_id = determine_user_id (req, selection, allow_api_write);
 
     // Initially assume IP based client key
     string client_key = addr_prefix + ip;
@@ -540,8 +478,6 @@ void process_request(request &req, rate_limiter &limiter,
     // set the client key and user roles accordingly
     if (user_id) {
         client_key = (format("%1%%2%") % user_prefix % (*user_id)).str();
-        if (store)
-          user_roles = store->get_roles_for_user(*user_id);
     }
 
     // check whether the client is being rate limited
@@ -579,43 +515,43 @@ void process_request(request &req, rate_limiter &limiter,
     switch (method) {
 
       case http::method::GET:
-	std::tie(request_name, bytes_written) = process_get_request(req, handler, selection, ip, generator);
-	break;
+       std::tie(request_name, bytes_written) = process_get_request(req, handler, selection, ip, generator);
+       break;
 
       case http::method::HEAD:
-	std::tie(request_name, bytes_written) = process_head_request(req, handler, selection, ip);
-	break;
+       std::tie(request_name, bytes_written) = process_head_request(req, handler, selection, ip);
+       break;
 
       case http::method::POST:
-	{
-	  validate_user_db_update_permission(user_id, selection, allow_api_write);
+       {
+         validate_user_db_update_permission(user_id, selection, allow_api_write);
 
-	  if (update_factory == nullptr)
-	    throw http::bad_request("Backend does not support POST requests");
+         if (update_factory == nullptr)
+           throw http::bad_request("Backend does not support POST requests");
 
-	  std::tie(request_name, bytes_written) =
-	      process_post_put_request(req, handler, factory, update_factory, user_id, ip, generator);
-	}
-	break;
+         std::tie(request_name, bytes_written) =
+             process_post_put_request(req, handler, factory, update_factory, user_id, ip, generator);
+       }
+       break;
 
       case http::method::PUT:
-	{
-	  validate_user_db_update_permission(user_id, selection, allow_api_write);
+       {
+         validate_user_db_update_permission(user_id, selection, allow_api_write);
 
-	  if (update_factory == nullptr)
-	    throw http::bad_request("Backend does not support PUT requests");
+         if (update_factory == nullptr)
+           throw http::bad_request("Backend does not support PUT requests");
 
-	  std::tie(request_name, bytes_written) =
-	      process_post_put_request(req, handler, factory, update_factory, user_id, ip, generator);
-	}
-	break;
+         std::tie(request_name, bytes_written) =
+             process_post_put_request(req, handler, factory, update_factory, user_id, ip, generator);
+       }
+       break;
 
       case http::method::OPTIONS:
-	std::tie(request_name, bytes_written) = process_options_request(req, handler);
-	break;
+       std::tie(request_name, bytes_written) = process_options_request(req, handler);
+       break;
 
       default:
-	process_not_allowed(req, handler);
+       process_not_allowed(req, handler);
     }
 
     // update the rate limiter, if anything was written
@@ -629,7 +565,7 @@ void process_request(request &req, rate_limiter &limiter,
     auto delta = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
     logger::message(format("Completed request for %1% from %2% in %3% ms returning %4% bytes") %
                     request_name % ip %
-		    delta %
+                    delta %
                     bytes_written);
 
   } catch (const http::not_found &e) {
