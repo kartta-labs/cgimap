@@ -1,7 +1,9 @@
 CGImap
 ======
 
-[![Build Status](https://travis-ci.org/zerebubuth/openstreetmap-cgimap.svg?branch=master)](https://travis-ci.org/zerebubuth/openstreetmap-cgimap)
+Note: this is a copy of [https://github.com/zerebubuth/openstreetmap-cgimap](https://github.com/zerebubuth/openstreetmap-cgimap)
+which has been slightly customized to work with the [https://github.com/kartta-labs](Kartta Labs) suite of applications.
+
 
 Overview
 --------
