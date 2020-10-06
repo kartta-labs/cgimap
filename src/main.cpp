@@ -107,6 +107,8 @@ static void get_options(int argc, char **argv, po::variables_map &options) {
     ("maxdebt", po::value<int>(), "maximum debt (in Mb) to allow each client before rate limiting")
     ("port", po::value<int>(), "FCGI port number (e.g. 8000) to listen on. This option is for backwards compatibility, please use --socket for new configurations.")
     ("socket", po::value<string>(), "FCGI port number (e.g. :8000) or UNIX socket to listen on")
+    ("copyright", po::value<string>(), "copyright owner")
+    ("attribution", po::value<string>(), "copyright attribution URL")
     ;
   // clang-format on
 
@@ -173,7 +175,7 @@ static void process_requests(int socket, const po::variables_map &options) {
     if (req.accept_r() >= 0) {
 	std::chrono::system_clock::time_point now(std::chrono::system_clock::now());
       req.set_current_time(now);
-      process_request(req, limiter, generator, route, factory, update_factory);
+      process_request(req, limiter, generator, route, factory, update_factory, options);
     }
   }
 

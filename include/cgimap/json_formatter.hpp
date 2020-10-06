@@ -1,6 +1,7 @@
 #ifndef JSON_FORMATTER_HPP
 #define JSON_FORMATTER_HPP
 
+#include <boost/program_options.hpp>
 #include "cgimap/output_formatter.hpp"
 #include "cgimap/json_writer.hpp"
 
@@ -21,7 +22,7 @@ private:
 
 public:
   // NOTE: takes ownership of the writer!
-  json_formatter(json_writer *w);
+  json_formatter(json_writer *w, const boost::program_options::variables_map &options);
   virtual ~json_formatter();
 
   mime::type mime_type() const;
@@ -57,6 +58,9 @@ public:
 
   void flush();
   void error(const std::string &);
+ private:
+  std::string copyright_;
+  std::string attribution_;
 };
 
 #endif /* JSON_FORMATTER_HPP */

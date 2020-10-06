@@ -28,8 +28,19 @@ const std::string &element_type_name(element_type elt) {
 
 } // anonymous namespace
 
-json_formatter::json_formatter(json_writer *w) : writer(w),
-    is_in_elements_array(false) {}
+json_formatter::json_formatter(json_writer *w,
+   const boost::program_options::variables_map &options) : writer(w), is_in_elements_array(false) {
+  if (options.count("copyright")) {
+    copyright_ = options["copyright"].as<string>();
+  } else {
+    copyright_ = string("OpenStreetMap and contributors");
+  }
+  if (options.count("attribution")) {
+    attribution_ = options["attribution"].as<string>();
+  } else {
+    attribution_ = string("http://www.openstreetmap.org/copyright");
+  }
+}
 
 json_formatter::~json_formatter() = default;
 
@@ -59,8 +70,8 @@ void json_formatter::start_document(
 
   WRITE_KV("version", string, "0.6");
   WRITE_KV("generator", string, generator);
-  WRITE_KV("copyright", string, "OpenStreetMap and contributors");
-  WRITE_KV("attribution", string, "http://www.openstreetmap.org/copyright");
+  WRITE_KV("copyright", string, copyright_);
+  WRITE_KV("attribution", string, attribution_);
   WRITE_KV("license", string, "http://opendatacommons.org/licenses/odbl/1-0/");
 }
 

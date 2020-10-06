@@ -28,7 +28,18 @@ const std::string &element_type_name(element_type elt) {
 
 } // anonymous namespace
 
-xml_formatter::xml_formatter(xml_writer *w) : writer(w) {}
+xml_formatter::xml_formatter(xml_writer *w, const boost::program_options::variables_map &options) : writer(w) {
+  if (options.count("copyright")) {
+    copyright_ = options["copyright"].as<string>();
+  } else {
+    copyright_ = string("OpenStreetMap and contributors");
+  }
+  if (options.count("attribution")) {
+    attribution_ = options["attribution"].as<string>();
+  } else {
+    attribution_ = string("http://www.openstreetmap.org/copyright");
+  }
+}
 
 xml_formatter::~xml_formatter() = default;
 
@@ -39,10 +50,8 @@ void xml_formatter::start_document(
   writer->start(root_name);
   writer->attribute("version", string("0.6"));
   writer->attribute("generator", generator);
-
-  writer->attribute("copyright", string("OpenStreetMap and contributors"));
-  writer->attribute("attribution",
-                    string("http://www.openstreetmap.org/copyright"));
+  writer->attribute("copyright", copyright_);
+  writer->attribute("attribution", attribution_);
   writer->attribute("license",
                     string("http://opendatacommons.org/licenses/odbl/1-0/"));
 }
