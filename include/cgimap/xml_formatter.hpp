@@ -1,6 +1,7 @@
 #ifndef XML_FORMATTER_HPP
 #define XML_FORMATTER_HPP
 
+#include <boost/program_options.hpp>
 #include "cgimap/output_formatter.hpp"
 #include "cgimap/xml_writer.hpp"
 
@@ -17,7 +18,7 @@ private:
 
 public:
   // NOTE: takes ownership of the writer!
-  xml_formatter(xml_writer *w);
+  xml_formatter(xml_writer *w, const boost::program_options::variables_map &options);
   virtual ~xml_formatter();
 
   mime::type mime_type() const;
@@ -54,6 +55,10 @@ public:
 
   void flush();
   void error(const std::string &);
+
+ private:
+  std::string copyright_;
+  std::string attribution_;
 };
 
 #endif /* XML_FORMATTER_HPP */

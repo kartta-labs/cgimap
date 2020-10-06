@@ -5,6 +5,7 @@
 #include "cgimap/output_formatter.hpp"
 #include "cgimap/output_buffer.hpp"
 #include "cgimap/request.hpp"
+#include <boost/program_options.hpp>
 
 #include <memory>
 
@@ -20,6 +21,7 @@ mime::type choose_best_mime_type(request &req, responder_ptr_t hptr);
  */
 std::shared_ptr<output_formatter>
 create_formatter(request &req, mime::type best_type,
-                 std::shared_ptr<output_buffer>);
+                 std::shared_ptr<output_buffer>,
+                 const boost::program_options::variables_map &options);
 
 #endif /* CHOOSE_FORMATTER_HPP */

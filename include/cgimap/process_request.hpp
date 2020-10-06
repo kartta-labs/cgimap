@@ -8,6 +8,7 @@
 #include "cgimap/routes.hpp"
 #include "cgimap/basicauth.hpp"
 #include <string>
+#include <boost/program_options.hpp>
 
 /**
  * process a single request.
@@ -15,6 +16,7 @@
 void process_request(request &req, rate_limiter &limiter,
                      const std::string &generator, routes &route,
                      std::shared_ptr<data_selection::factory> factory,
-                     std::shared_ptr<data_update::factory> update_factory);
+                     std::shared_ptr<data_update::factory> update_factory,
+                     const boost::program_options::variables_map &options);
 
 #endif /* PROCESS_REQUEST_HPP */

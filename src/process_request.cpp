@@ -172,7 +172,8 @@ void process_not_allowed(request &req, const http::method_not_allowed& e) {
 std::tuple<string, size_t>
 process_get_request(request &req, handler_ptr_t handler,
                     data_selection_ptr selection,
-                    const string &ip, const string &generator) {
+                    const string &ip, const string &generator,
+                    const po::variables_map &options) {
   // request start logging
   string request_name = handler->log_name();
   logger::message(format("Started request for %1% from %2%") % request_name %
@@ -200,7 +201,7 @@ process_get_request(request &req, handler_ptr_t handler,
 
   // create the correct mime type output formatter.
   shared_ptr<output_formatter> o_formatter =
-      create_formatter(req, best_mime_type, out);
+      create_formatter(req, best_mime_type, out, options);
 
   try {
     // call to write the response
@@ -240,7 +241,8 @@ process_post_put_request(request &req, handler_ptr_t handler,
                     std::shared_ptr<data_selection::factory> factory,
                     std::shared_ptr<data_update::factory> update_factory,
                     boost::optional<osm_user_id_t> user_id,
-                    const string &ip, const string &generator) {
+                    const string &ip, const string &generator,
+                    const po::variables_map &options) {
   // request start logging
   string request_name = handler->log_name();
   logger::message(format("Started request for %1% from %2%") % request_name %
@@ -300,7 +302,8 @@ process_post_put_request(request &req, handler_ptr_t handler,
   shared_ptr<output_buffer> out = encoding->buffer(req.get_buffer());
 
   // create the correct mime type output formatter.
-  shared_ptr<output_formatter> o_formatter = create_formatter(req, best_mime_type, out);
+  shared_ptr<output_formatter> o_formatter = 
+    create_formatter(req, best_mime_type, out, options);
 
   try {
     //    // call to write the response
@@ -451,7 +454,8 @@ boost::optional<osm_user_id_t> determine_user_id (request& req,
 void process_request(request &req, rate_limiter &limiter,
                      const string &generator, routes &route,
                      std::shared_ptr<data_selection::factory> factory,
-                     std::shared_ptr<data_update::factory> update_factory) {
+                     std::shared_ptr<data_update::factory> update_factory, 
+                     const po::variables_map &options) {
   try {
 
     std::set<osm_user_role_t> user_roles;
@@ -515,7 +519,7 @@ void process_request(request &req, rate_limiter &limiter,
     switch (method) {
 
       case http::method::GET:
-       std::tie(request_name, bytes_written) = process_get_request(req, handler, selection, ip, generator);
+       std::tie(request_name, bytes_written) = process_get_request(req, handler, selection, ip, generator, options);
        break;
 
       case http::method::HEAD:
@@ -530,7 +534,7 @@ void process_request(request &req, rate_limiter &limiter,
            throw http::bad_request("Backend does not support POST requests");
 
          std::tie(request_name, bytes_written) =
-             process_post_put_request(req, handler, factory, update_factory, user_id, ip, generator);
+             process_post_put_request(req, handler, factory, update_factory, user_id, ip, generator, options);
        }
        break;
 
@@ -542,7 +546,7 @@ void process_request(request &req, rate_limiter &limiter,
            throw http::bad_request("Backend does not support PUT requests");
 
          std::tie(request_name, bytes_written) =
-             process_post_put_request(req, handler, factory, update_factory, user_id, ip, generator);
+             process_post_put_request(req, handler, factory, update_factory, user_id, ip, generator, options);
        }
        break;
 
